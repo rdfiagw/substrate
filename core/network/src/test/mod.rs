@@ -40,7 +40,7 @@ use crossbeam_channel::{self as channel, Sender, select};
 use futures::Future;
 use futures::sync::{mpsc, oneshot};
 use crate::message::{Message, ConsensusEngineId};
-use network_libp2p::{NodeIndex, ProtocolId, PeerId};
+use network_libp2p::PeerId;
 use parking_lot::{Mutex, RwLock};
 use primitives::{H256, ed25519::Public as AuthorityId};
 use crate::protocol::{ConnectedPeer, Context, FromNetworkMsg, Protocol, ProtocolMsg};
