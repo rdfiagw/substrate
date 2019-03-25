@@ -139,11 +139,11 @@ impl Permill {
 
 impl<N> ::rstd::ops::Mul<N> for Permill
 where
-	N: traits::As<u64>
+	N: traits::As<u64> + ::rstd::ops::Mul<N, Output=N> + ::rstd::ops::Div<N, Output=N>
 {
 	type Output = N;
 	fn mul(self, b: N) -> Self::Output {
-		<N as traits::As<u64>>::sa(b.as_().saturating_mul(self.0 as u64) / 1_000_000)
+		b * <N as traits::As<u64>>::sa(self.0 as u64) / <N as traits::As<u64>>::sa(1_000_000)
 	}
 }
 
@@ -213,11 +213,11 @@ impl Perbill {
 
 impl<N> ::rstd::ops::Mul<N> for Perbill
 where
-	N: traits::As<u64>
+	N: traits::As<u64> + ::rstd::ops::Mul<N, Output=N> + ::rstd::ops::Div<N, Output=N>
 {
 	type Output = N;
 	fn mul(self, b: N) -> Self::Output {
-		<N as traits::As<u64>>::sa(b.as_().saturating_mul(self.0 as u64) / 1_000_000_000)
+		b * <N as traits::As<u64>>::sa(self.0 as u64) / <N as traits::As<u64>>::sa(1_000_000_000)
 	}
 }
 
@@ -293,11 +293,11 @@ impl ::rstd::ops::Deref for Perquintill {
 
 impl<N> ::rstd::ops::Mul<N> for Perquintill
 where
-	N: traits::As<u64>
+	N: traits::As<u64> + ::rstd::ops::Mul<N, Output=N> + ::rstd::ops::Div<N, Output=N>
 {
 	type Output = N;
 	fn mul(self, b: N) -> Self::Output {
-		<N as traits::As<u64>>::sa(b.as_().saturating_mul(self.0) / QUINTILLION)
+		b * <N as traits::As<u64>>::sa(self.0 as u64) / <N as traits::As<u64>>::sa(QUINTILLION)
 	}
 }
 
