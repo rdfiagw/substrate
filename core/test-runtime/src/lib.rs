@@ -150,13 +150,13 @@ impl Extrinsic {
 	}
 }
 
-// The identity type used by authorities.
+/// The identity type used by authorities.
 pub type AuthorityId = ed25519::Public;
-// The signature type used by authorities.
+/// The signature type used by authorities.
 pub type AuthoritySignature = ed25519::Signature;
 /// An identifier for an account on this system.
 pub type AccountId = MultiSigner;
-// The signature type used by accounts/transactions.
+/// The signature type used by accounts/transactions.
 pub type AccountSignature = MultiSignature;
 /// A simple hash type for all our hashing.
 pub type Hash = H256;
