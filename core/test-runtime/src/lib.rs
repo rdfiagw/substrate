@@ -34,7 +34,7 @@ use runtime_primitives::{
 	create_runtime_str,
 	traits::{
 		BlindCheckable, BlakeTwo256, Block as BlockT, Extrinsic as ExtrinsicT,
-		GetNodeBlockType, GetRuntimeBlockType,
+		GetNodeBlockType, GetRuntimeBlockType, AuthorityIdFor,
 	},
 	MultiSigner, MultiSignature,
 };
@@ -108,6 +108,7 @@ impl Transfer {
 pub enum Extrinsic {
 	AuthoritiesChange(Vec<AuthorityId>),
 	Transfer(Transfer, AccountSignature),
+	IncludeData(Vec<u8>),
 }
 
 #[cfg(feature = "std")]
@@ -131,6 +132,7 @@ impl BlindCheckable for Extrinsic {
 					Err(runtime_primitives::BAD_SIGNATURE)
 				}
 			},
+			Extrinsic::IncludeData(data) => Ok(Extrinsic::IncludeData(data)),
 		}
 	}
 }
@@ -179,9 +181,9 @@ pub fn run_tests(mut input: &[u8]) -> Vec<u8> {
 
 	print("run_tests...");
 	let block = Block::decode(&mut input).unwrap();
-	print("deserialised block.");
+	print("deserialized block.");
 	let stxs = block.extrinsics.iter().map(Encode::encode).collect::<Vec<_>>();
-	print("reserialised transactions.");
+	print("reserialized transactions.");
 	[stxs.len() as u8].encode()
 }
 
@@ -301,16 +303,12 @@ cfg_if! {
 					version()
 				}
 
-				fn authorities() -> Vec<AuthorityId> {
-					system::authorities()
-				}
-
 				fn execute_block(block: Block) {
 					system::execute_block(block)
 				}
 
-				fn initialise_block(header: &<Block as BlockT>::Header) {
-					system::initialise_block(header)
+				fn initialize_block(header: &<Block as BlockT>::Header) {
+					system::initialize_block(header)
 				}
 			}
 
@@ -331,8 +329,8 @@ cfg_if! {
 					system::execute_transaction(extrinsic)
 				}
 
-				fn finalise_block() -> <Block as BlockT>::Header {
-					system::finalise_block()
+				fn finalize_block() -> <Block as BlockT>::Header {
+					system::finalize_block()
 				}
 
 				fn inherent_extrinsics(_data: InherentData) -> Vec<<Block as BlockT>::Extrinsic> {
@@ -391,6 +389,19 @@ cfg_if! {
 			impl consensus_aura::AuraApi<Block> for Runtime {
 				fn slot_duration() -> u64 { 1 }
 			}
+
+			impl offchain_primitives::OffchainWorkerApi<Block> for Runtime {
+				fn offchain_worker(block: u64) {
+					let ex = Extrinsic::IncludeData(block.encode());
+					runtime_io::submit_extrinsic(&ex)
+				}
+			}
+
+			impl consensus_authorities::AuthoritiesApi<Block> for Runtime {
+				fn authorities() -> Vec<AuthorityIdFor<Block>> {
+					crate::system::authorities()
+				}
+			}
 		}
 	} else {
 		impl_runtime_apis! {
@@ -399,16 +410,12 @@ cfg_if! {
 					version()
 				}
 
-				fn authorities() -> Vec<AuthorityId> {
-					system::authorities()
-				}
-
 				fn execute_block(block: Block) {
 					system::execute_block(block)
 				}
 
-				fn initialise_block(header: &<Block as BlockT>::Header) {
-					system::initialise_block(header)
+				fn initialize_block(header: &<Block as BlockT>::Header) {
+					system::initialize_block(header)
 				}
 			}
 
@@ -429,8 +436,8 @@ cfg_if! {
 					system::execute_transaction(extrinsic)
 				}
 
-				fn finalise_block() -> <Block as BlockT>::Header {
-					system::finalise_block()
+				fn finalize_block() -> <Block as BlockT>::Header {
+					system::finalize_block()
 				}
 
 				fn inherent_extrinsics(_data: InherentData) -> Vec<<Block as BlockT>::Extrinsic> {
@@ -493,6 +500,19 @@ cfg_if! {
 
 			impl consensus_aura::AuraApi<Block> for Runtime {
 				fn slot_duration() -> u64 { 1 }
+			}
+
+			impl offchain_primitives::OffchainWorkerApi<Block> for Runtime {
+				fn offchain_worker(block: u64) {
+					let ex = Extrinsic::IncludeData(block.encode());
+					runtime_io::submit_extrinsic(&ex)
+				}
+			}
+
+			impl consensus_authorities::AuthoritiesApi<Block> for Runtime {
+				fn authorities() -> Vec<AuthorityIdFor<Block>> {
+					crate::system::authorities()
+				}
 			}
 		}
 	}

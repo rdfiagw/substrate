@@ -39,14 +39,14 @@ use crate::consensus_gossip::ConsensusGossip;
 use crossbeam_channel::{self as channel, Sender, select};
 use futures::Future;
 use futures::sync::{mpsc, oneshot};
-use crate::message::{Message, ConsensusEngineId};
+use crate::message::Message;
 use network_libp2p::PeerId;
 use parking_lot::{Mutex, RwLock};
 use primitives::{H256, ed25519::Public as AuthorityId};
 use crate::protocol::{ConnectedPeer, Context, FromNetworkMsg, Protocol, ProtocolMsg};
 use runtime_primitives::generic::BlockId;
 use runtime_primitives::traits::{AuthorityIdFor, Block as BlockT, Digest, DigestItem, Header, NumberFor};
-use runtime_primitives::Justification;
+use runtime_primitives::{Justification, ConsensusEngineId};
 use crate::service::{network_channel, NetworkChan, NetworkLink, NetworkMsg, NetworkPort, TransactionPool};
 use crate::specialization::NetworkSpecialization;
 use test_client::{self, AccountKeyring};
@@ -644,7 +644,6 @@ pub trait TestNetFactory: Sized {
 					Some(NetworkMsg::ReportPeer(who, _)) => {
 						to_disconnect.insert(who);
 					}
-					Some(_msg) => continue,
 				}
 			}
 			for d in to_disconnect {
