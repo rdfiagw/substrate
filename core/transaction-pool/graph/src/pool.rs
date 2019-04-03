@@ -905,8 +905,8 @@ mod tests {
 
 			// when
 			let xt = uxt(Transfer {
-				from: AccountId::from_h256(H256::from_low_u64_be(1)),
-				to: AccountId::from_h256(H256::from_low_u64_be(2)),
+				from: Public::unchecked_from(H256::from_low_u64_be(1)).into(),
+				to: Public::unchecked_from(H256::from_low_u64_be(2)).into(),
 				amount: 5,
 				nonce: 1,
 			});
@@ -921,8 +921,8 @@ mod tests {
 			// But now before the previous one is imported we import
 			// the one that it depends on.
 			let xt = uxt(Transfer {
-				from: AccountId::from_h256(H256::from_low_u64_be(1)),
-				to: AccountId::from_h256(H256::from_low_u64_be(2)),
+				from: Public::unchecked_from(H256::from_low_u64_be(1)).into(),
+				to: Public::unchecked_from(H256::from_low_u64_be(2)).into(),
 				amount: 4,
 				nonce: 0,
 			});

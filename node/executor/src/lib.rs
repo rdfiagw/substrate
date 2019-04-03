@@ -38,7 +38,7 @@ mod tests {
 		NativeOrEncoded};
 	use node_primitives::{Hash, BlockNumber, AccountId};
 	use runtime_primitives::traits::{Header as HeaderT, Hash as HashT};
-	use runtime_primitives::{generic, generic::Era, ApplyOutcome, ApplyError, ApplyResult, Perbill};
+	use runtime_primitives::{generic, generic::Era, ApplyOutcome, ApplyError, ApplyResult, Perbill, MultiSigner, AnySignature};
 	use {balances, indices, session, system, staking, consensus, timestamp, treasury, contract};
 	use contract::ContractAddressFor;
 	use system::{EventRecord, Phase};
@@ -81,14 +81,24 @@ mod tests {
 			Some((signed, index)) => {
 				let era = Era::mortal(256, 0);
 				let payload = (index.into(), xt.function, era, GENESIS_HASH);
-				let key = AccountKeyring::from_h256_public(signed.clone().into()).unwrap();
-				let signature = UncheckedFrom::unchecked_from(payload.using_encoded(|b| {
+				let to_sign = payload.using_encoded(|b| {
 					if b.len() > 256 {
-						key.sign(&runtime_io::blake2_256(b))
+						runtime_io::blake2_256(b).to_vec()
 					} else {
-						key.sign(b)
+						b.to_vec()
 					}
-				}));
+				});
+				let signature = match signed {
+					MultiSigner::Ed25519(ref public) => {
+						let key = AuthorityKeyring::from_public(public).unwrap();
+						AnySignature::from(key.sign(&to_sign))
+					},
+					MultiSigner::Sr25519(ref public) => {
+						let key = AccountKeyring::from_public(public).unwrap();
+						key.sign(&to_sign).into()
+					}
+				};
+
 				UncheckedExtrinsic {
 					signature: Some((indices::address::Address::Id(signed), signature, payload.0, era)),
 					function: payload.1,

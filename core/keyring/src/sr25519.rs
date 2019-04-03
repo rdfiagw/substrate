@@ -170,13 +170,6 @@ impl From<Keyring> for sr_primitives::MultiSigner {
 	}
 }
 
-impl From<Keyring> for sr_primitives::AnySigner {
-	fn from(x: Keyring) -> Self {
-		use substrate_primitives::crypto::UncheckedFrom;
-		sr_primitives::AnySigner::unchecked_from(x)
-	}
-}
-
 #[cfg(test)]
 mod tests {
 	use super::*;

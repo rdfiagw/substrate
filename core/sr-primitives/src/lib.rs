@@ -310,7 +310,6 @@ pub enum MultiSignature {
 	Sr25519(sr25519::Signature),
 }
 
-
 impl From<ed25519::Signature> for MultiSignature {
 	fn from(x: ed25519::Signature) -> Self {
 		MultiSignature::Ed25519(x)
@@ -366,6 +365,25 @@ impl From<sr25519::Public> for MultiSigner {
 	}
 }
 
+impl<T: Into<H256>> crypto::UncheckedFrom<T> for MultiSigner {
+	fn unchecked_from(x: T) -> Self {
+		// TODO what about sr?
+		ed25519::Public::unchecked_from(x.into()).into()
+	}
+}
+
+#[cfg(feature = "std")]
+impl std::fmt::Display for MultiSigner {
+	fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+		match *self {
+			MultiSigner::Ed25519(ref who) => write!(fmt, "ed25519: {}", who),
+			MultiSigner::Sr25519(ref who) => write!(fmt, "sr25519: {}", who),
+		}
+	}
+}
+
+
+
 impl Verify for MultiSignature {
 	type Signer = MultiSigner;
 	fn verify<L: Lazy<[u8]>>(&self, msg: L, signer: &Self::Signer) -> bool {
@@ -383,10 +401,22 @@ impl Verify for MultiSignature {
 pub struct AnySignature(H512);
 
 impl Verify for AnySignature {
-	type Signer = MultiSignature;
+	type Signer = MultiSigner;
 	fn verify<L: Lazy<[u8]>>(&self, mut msg: L, signer: &Self::Signer) -> bool {
-		runtime_io::sr25519_verify(self.0.as_fixed_bytes(), msg.get(), signer.as_ref()) ||
-			runtime_io::ed25519_verify(self.0.as_fixed_bytes(), msg.get(), &signer.as_ref())
+		runtime_io::sr25519_verify(self.0.as_fixed_bytes(), msg.get(), signer) ||
+			runtime_io::ed25519_verify(self.0.as_fixed_bytes(), msg.get(), signer)
+	}
+}
+
+impl From<ed25519::Signature> for AnySignature {
+	fn from(s: ed25519::Signature) -> Self {
+		AnySignature(s.into())
+	}
+}
+
+impl From<sr25519::Signature> for AnySignature {
+	fn from(s: sr25519::Signature) -> Self {
+		AnySignature(s.into())
 	}
 }
 
