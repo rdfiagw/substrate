@@ -365,9 +365,10 @@ impl From<sr25519::Public> for MultiSigner {
 	}
 }
 
+/// NOTE: This implementations is required by `SimpleAddressDeterminator`,
+/// we convert the hash into some AccountId, it's fine to use any scheme.
 impl<T: Into<H256>> crypto::UncheckedFrom<T> for MultiSigner {
 	fn unchecked_from(x: T) -> Self {
-		// TODO what about sr?
 		ed25519::Public::unchecked_from(x.into()).into()
 	}
 }
