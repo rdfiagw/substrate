@@ -402,7 +402,7 @@ impl<N: Ord> Peers<N> {
 			Some(p) => p,
 		};
 
-		if peer.view.last_commit.as_ref() >= Some(&new_height) {
+		if peer.view.last_commit.as_ref() > Some(&new_height) {
 			return Err(Misbehavior::InvalidViewChange);
 		}
 		peer.view.last_commit = Some(new_height);
