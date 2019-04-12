@@ -18,7 +18,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use log::{debug, warn, info};
-use parity_codec::{Decode, Encode};
+use parity_codec::{Decode, Encode, Compact};
 use futures::prelude::*;
 use tokio::timer::Delay;
 use parking_lot::RwLock;
@@ -31,15 +31,16 @@ use client::{
 use grandpa::{
 	BlockNumberOps, Equivocation, Error as GrandpaError, round::State as RoundState, voter, VoterSet,
 };
+use runtime_primitives::AnySignature;
 use runtime_primitives::OpaqueExtrinsic;
-use runtime_primitives::generic::{BlockId, Era, UncheckedExtrinsic};
+use runtime_primitives::generic::{BlockId, Era};
 use runtime_primitives::traits::{
 	As, Block as BlockT, Header as HeaderT, NumberFor, One, Zero, ProvideRuntimeApi,
 };
-use substrate_primitives::{Blake2Hasher, ed25519, H256, Pair};
+use substrate_primitives::{Blake2Hasher, ed25519, H256, Pair, sr25519};
 use substrate_telemetry::{telemetry, CONSENSUS_INFO};
 use srml_indices::address::Address;
-use node_runtime::{Call, GrandpaModule, GrandpaCall};
+use node_runtime::{Call, GrandpaModule, GrandpaCall, UncheckedExtrinsic};
 
 use crate::{
 	Commit, Config, Error, Network, Precommit, Prevote,
@@ -52,7 +53,7 @@ use crate::authorities::SharedAuthoritySet;
 use crate::consensus_changes::SharedConsensusChanges;
 use crate::justification::GrandpaJustification;
 use crate::until_imported::UntilVoteTargetImported;
-
+use keyring::AccountKeyring;
 use ed25519::Public as AuthorityId;
 
 /// Data about a completed round.
@@ -377,19 +378,23 @@ fn sign_and_dispatch<Block: BlockT<Hash=H256>, A: txpool::ChainApi<Block=Block>>
 	hash: BlockId<Block>,
 	report_call: Vec<u8>
 ) {
-	let next_index = 10000u32;
+	let next_index = 10000u64;
+	let signed: sr25519::Public = AccountKeyring::Alice.into();
 	let payload = (
-		next_index,
+		Compact::from(next_index),
 		Call::Grandpa(GrandpaCall::report_misbehavior(report_call)),
 		Era::immortal(),
 		genesis_hash,
 	);
-	let signature: ed25519::Signature = signed.sign(&payload.encode()).into();
-	
-	let local_id: ed25519::Public = signed.public();
-	let extrinsic = UncheckedExtrinsic::new_signed(next_index, payload.1, Address::<_, u32>::Id(local_id), signature);
-	let uxt: <Block as BlockT>::Extrinsic = Decode::decode(&mut extrinsic.encode().as_slice()).expect("Encoded extrinsic is valid");
-	
+	let signature: sr25519::Signature = AccountKeyring::from_public(&signed).unwrap().sign(&payload.encode()).into();
+	println!("payload = {:?}", payload);
+	// let local_id: sr25519::Public = signed.public();
+	let any_signature = AnySignature::from(signature);
+	println!("any signature = {:?}", any_signature);
+	let extrinsic = UncheckedExtrinsic::new_signed(next_index, payload.1, Address::<_, u32>::Id(signed), any_signature, Era::Immortal);
+	// let extrinsic = UncheckedExtrinsic::new_unsigned(payload.1);
+	let uxt = Decode::decode(&mut extrinsic.encode().as_slice()).expect("Encoded extrinsic is valid");
+	// assert_eq!(extrinsic, uxt);
 	if let Err(e) = transaction_pool.submit_one(&hash, uxt) {
 		warn!("Error importing misbehavior report: {:?}", e);
 	}
